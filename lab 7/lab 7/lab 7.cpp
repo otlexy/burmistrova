@@ -1,140 +1,203 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <vector>
+#include <iomanip>
 
 using namespace std;
+
+// Функция для подсчета количества ребер
+int countEdges(const vector<vector<int>>& adj, int n) {
+    int edges = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = i; j < n; j++) { // считаем каждое ребро один раз
+            if (adj[i][j] == 1) edges++;
+        }
+    }
+    return edges;
+}
+
+// Функция для определения степени графа (максимальная степень вершины)
+int graphDegree(const vector<vector<int>>& adj, int n) {
+    int maxDegree = 0;
+    for (int i = 0; i < n; i++) {
+        int degree = 0;
+        for (int j = 0; j < n; j++) {
+            if (adj[i][j] == 1) degree++;
+        }
+        if (degree > maxDegree) maxDegree = degree;
+    }
+    return maxDegree;
+}
+
+// Функция для преобразования матрицы смежности в матрицу инцидентности
+vector<vector<int>> toIncidenceMatrix(const vector<vector<int>>& adj, int n, int edges) {
+    vector<vector<int>> inc(n, vector<int>(edges, 0)); //создание двумерного вектора (матрицы)
+    int edgeIndex = 0;
+
+    for (int i = 0; i < n; i++) {
+        for (int j = i; j < n; j++) {
+            if (adj[i][j] == 1) {
+                if (i == j) {
+                    // петля
+                    inc[i][edgeIndex] = 2;
+                }
+                else {
+                    // обычное ребро
+                    inc[i][edgeIndex] = 1;
+                    inc[j][edgeIndex] = 1;
+                }
+                edgeIndex++;
+            }
+        }
+    }
+    return inc;
+}
+
+// Функция для вывода матрицы смежности с выделением связей с заданной вершиной
+void printAdjacencyMatrix(const vector<vector<int>>& adj, int n, int vx) {
+    cout << "\n=== МАТРИЦА СМЕЖНОСТИ (связи с V" << vx + 1 << " выделены скобками) ===" << endl;
+    cout << "    ";
+    for (int j = 0; j < n; j++) {
+        cout << "V" << j + 1 << " ";
+    }
+    cout << endl;
+    cout << "    ";
+    for (int j = 0; j < n; j++) {
+        cout << "---";
+    }
+    cout << endl;
+
+    for (int i = 0; i < n; i++) {
+        cout << "V" << i + 1 << " | ";
+        for (int j = 0; j < n; j++) {
+            // Выделяем скобками связи с вершиной Vx
+            if ((i == vx || j == vx) && adj[i][j] == 1) {
+                cout << "[" << adj[i][j] << "] ";
+            }
+            else {
+                cout << " " << adj[i][j] << "  ";
+            }
+        }
+        cout << endl;
+    }
+}
+
+// Функция для вывода матрицы инцидентности
+void printIncidenceMatrix(const vector<vector<int>>& inc, int n, int edges) {
+    cout << "\n=== МАТРИЦА ИНЦИДЕНТНОСТИ ===" << endl;
+    cout << "    ";
+    for (int e = 0; e < edges; e++) {
+        cout << char('a' + e) << "  ";
+    }
+    cout << endl;
+    cout << "    ";
+    for (int e = 0; e < edges; e++) {
+        cout << "---";
+    }
+    cout << endl;
+
+    for (int i = 0; i < n; i++) {
+        cout << "V" << i + 1 << " | ";
+        for (int e = 0; e < edges; e++) {
+            cout << " " << inc[i][e] << "  ";
+        }
+        cout << endl;
+    }
+}
 
 int main() {
     setlocale(LC_ALL, "Russian");
 
-    // Читаем матрицу из файла
+    // ========== 1. Чтение данных из файла ==========
     ifstream file("graph.txt");
     if (!file) {
-        cout << "Файл graph.txt не найден!" << endl;
+        cout << "ОШИБКА: Файл graph.txt не найден!" << endl;
+        cout << "Создайте файл graph.txt с матрицей смежности." << endl;
+        system("pause");
         return 1;
     }
 
-    int versh; // количество вершин
-    file >> versh;
+    int n; // количество вершин
+    file >> n;
 
-    // Создаем и читаем матрицу смежности
-    vector<vector<int>> adj(versh, vector<int>(versh));
-    for (int i = 0; i < versh; i++) {
-        for (int j = 0; j < versh; j++) {
+    // Создаем и заполняем матрицу смежности
+    vector<vector<int>> adj(n, vector<int>(n));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
             file >> adj[i][j];
         }
     }
     file.close();
 
-    // Выводим матрицу смежности
-    cout << "=== МАТРИЦА СМЕЖНОСТИ ===" << endl;
-    for (int i = 0; i < versh; i++) {
-        cout << "В" << i + 1 << ": ";
-        for (int j = 0; j < versh; j++) {
-            cout << adj[i][j] << " ";
-        }
-        cout << endl;
-    }
-    cout << endl;
+    // ========== 2. Вывод исходной матрицы ==========
+    cout << "\n========================================" << endl;
+    cout << "      ЛАБОРАТОРНАЯ РАБОТА" << endl;
+    cout << "   Матричное представление графа" << endl;
+    cout << "========================================" << endl;
 
-    // 1. Подсчет количества ребер
-    int rebra = 0;
-    for (int i = 0; i < versh; i++) {
-        for (int j = i; j < versh; j++) { // начинаем с i чтобы не считать дважды
-            if (adj[i][j] == 1) rebra++;
-        }
-    }
-    cout << "Количество ребер: " << rebra << endl;
+    // ========== 3. Подсчет количества ребер и степени графа ==========
+    int edges = countEdges(adj, n);
+    int degree = graphDegree(adj, n);
 
-    // 2. Степень графа (максимальная степень вершины)
-    int max_degree = 0;
-    for (int i = 0; i < versh; i++) {
-        int degree = 0;
-        for (int j = 0; j < versh; j++) {
-            if (adj[i][j] == 1) degree++;
-        }
-        if (degree > max_degree) max_degree = degree;
-    }
-    cout << "Степень графа: " << max_degree << endl << endl;
+    cout << "\n--- ОСНОВНЫЕ ХАРАКТЕРИСТИКИ ГРАФА ---" << endl;
+    cout << " Количество вершин: " << n << endl;
+    cout << " Количество ребер: " << edges << endl;
+    cout << " Степень графа: " << degree << endl;
 
-    // 3. Преобразование в матрицу инцидентности
-    cout << "=== МАТРИЦА ИНЦИДЕНТНОСТИ ===" << endl;
+    // ========== 4. Преобразование в матрицу инцидентности ==========
+    vector<vector<int>> inc = toIncidenceMatrix(adj, n, edges);
+    printIncidenceMatrix(inc, n, edges);
 
-    // Создаем матрицу инцидентности
-    vector<vector<int>> inc(versh, vector<int>(rebra, 0));
-
-    int rebra_num = 0;
-    // Заполняем матрицу инцидентности
-    for (int i = 0; i < versh; i++) {
-        for (int j = i; j < versh; j++) {
-            if (adj[i][j] == 1) {
-                if (i == j) { // петля
-                    inc[i][rebra_num] = 2;
-                }
-                else { // обычное ребро
-                    inc[i][rebra_num] = 1;
-                    inc[j][rebra_num] = 1;
-                }
-                rebra_num++;
-            }
-        }
-    }
-
-    // Выводим заголовок с буквами ребер
-    cout << "   ";
-    for (int e = 0; e < rebra; e++) {
-        cout << char('a' + e) << " ";
-    }
-    cout << endl;
-
-    // Выводим саму матрицу
-    for (int i = 0; i < versh; i++) {
-        cout << "В" << i + 1 << ": ";
-        for (int e = 0; e < rebra; e++) {
-            cout << inc[i][e] << " ";
-        }
-        cout << endl;
-    }
-    cout << endl;
-
-    // 4. Поиск смежных вершин
+    // ========== 5. Поиск смежных вершин ==========
     int vx;
-    cout << "Введите номер вершины Vx (1-" << versh << "): ";
+    cout << "\n--- ПОИСК СМЕЖНЫХ ВЕРШИН ---" << endl;
+    cout << "Введите номер вершины Vx (1-" << n << "): ";
     cin >> vx;
-    vx--; // переводим в индекс массива (с 0)
+    vx--; // перевод в индекс массива
 
-    if (vx >= 0 && vx < versh) {
-        cout << "Вершины, смежные с V" << vx + 1 << ": ";
+    if (vx >= 0 && vx < n) {
+        // Поиск смежных вершин
+        cout << "\nВершины, смежные с V" << vx + 1 << ": ";
         bool found = false;
 
-        for (int j = 0; j < versh; j++) {
+        for (int j = 0; j < n; j++) {
             if (adj[vx][j] == 1) {
                 cout << "V" << j + 1 << " ";
                 found = true;
             }
         }
 
-        if (!found) cout << "нет смежных вершин";
+        if (!found) {
+            cout << "нет смежных вершин";
+        }
         cout << endl;
 
-        // Выделяем связи с вершиной Vx в матрице смежности
-        cout << endl << "Матрица смежности (связи с V" << vx + 1 << " выделены):" << endl;
-        for (int i = 0; i < versh; i++) {
-            cout << "В" << i + 1 << ": ";
-            for (int j = 0; j < versh; j++) {
-                if ((i == vx && adj[i][j] == 1) || (j == vx && adj[i][j] == 1)) {
-                    cout << "[" << adj[i][j] << "] ";
-                }
-                else {
-                    cout << " " << adj[i][j] << "  ";
+        // Вывод матрицы смежности с выделением
+        printAdjacencyMatrix(adj, n, vx);
+
+        // Вывод результата
+        cout << "\n=== РЕЗУЛЬТАТ РЕШЕНИЯ ===" << endl;
+        cout << " Задача: Напечатать все вершины, смежные вершине V" << vx + 1 << endl;
+        cout << " Результат: ";
+        if (found) {
+            cout << "Найдены смежные вершины: ";
+            for (int j = 0; j < n; j++) {
+                if (adj[vx][j] == 1) {
+                    cout << "V" << j + 1 << " ";
                 }
             }
-            cout << endl;
         }
+        else {
+            cout << "У вершины V" << vx + 1 << " нет смежных вершин";
+        }
+        cout << endl;
+
     }
     else {
-        cout << "Неверный номер вершины!" << endl;
+        cout << "\nОШИБКА: Неверный номер вершины! (должен быть от 1 до " << n << ")" << endl;
     }
 
+    cout << "\n========================================" << endl;
+    system("pause");
     return 0;
 }
